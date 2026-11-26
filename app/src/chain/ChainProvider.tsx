@@ -1,4 +1,5 @@
-import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
+import { useAnchorWallet, useWallet, type AnchorWallet } from '@solana/wallet-adapter-react';
+import { Keypair, type Transaction, type VersionedTransaction } from '@solana/web3.js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ClawChain, friendlyError, type ChainSnapshot } from './client';
 
@@ -20,15 +21,50 @@ interface ChainCtx {
   fail: (e: unknown) => void;
   sheetOpen: boolean;
   openSheet: (open: boolean) => void;
+  /** Devnet-only keypair kept in this browser, for trying the app without a wallet extension. */
+  burner: { on: boolean; address: string; enable: (on: boolean) => void };
 }
 
 const Ctx = createContext<ChainCtx | null>(null);
 const MODE_KEY = 'clawback-mode';
+const BURNER_KEY = 'clawback-burner-key';
+const BURNER_ON = 'clawback-burner-on';
+
+function loadBurner(): Keypair {
+  try {
+    const raw = localStorage.getItem(BURNER_KEY);
+    if (raw) return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw)));
+  } catch {
+    /* make a new one */
+  }
+  const kp = Keypair.generate();
+  localStorage.setItem(BURNER_KEY, JSON.stringify(Array.from(kp.secretKey)));
+  return kp;
+}
+
+function burnerWallet(kp: Keypair): AnchorWallet {
+  const sign = <T extends Transaction | VersionedTransaction>(tx: T): T => {
+    if ('version' in tx) tx.sign([kp]);
+    else tx.partialSign(kp);
+    return tx;
+  };
+  return {
+    publicKey: kp.publicKey,
+    signTransaction: async (tx) => sign(tx),
+    signAllTransactions: async (txs) => txs.map(sign),
+  };
+}
 
 export function ChainProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<Mode>(() => (localStorage.getItem(MODE_KEY) as Mode) || 'demo');
-  const wallet = useAnchorWallet();
-  const { connected } = useWallet();
+  const adapterWallet = useAnchorWallet();
+  const [burnerOn, setBurnerOn] = useState(() => localStorage.getItem(BURNER_ON) === '1');
+  const burnerKp = useMemo(() => loadBurner(), []);
+  const burnerW = useMemo(() => burnerWallet(burnerKp), [burnerKp]);
+  // A connected extension wallet always wins over the burner.
+  const wallet = adapterWallet ?? (burnerOn ? burnerW : undefined);
+  const connected = !!wallet;
+  useWallet();
   const [snap, setSnap] = useState<ChainSnapshot | null>(null);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -87,7 +123,17 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     }
   }, [refresh]);
 
+  const burner = {
+    on: burnerOn && !adapterWallet,
+    address: burnerKp.publicKey.toBase58(),
+    enable: (on: boolean) => {
+      localStorage.setItem(BURNER_ON, on ? '1' : '0');
+      setBurnerOn(on);
+    },
+  };
+
   const value: ChainCtx = {
+    burner,
     mode, setMode, chain, snap, refresh, run, status, setStatus, error,
     clearError: () => setError(''), sheetOpen, openSheet,
     fail: (e: unknown) => {
