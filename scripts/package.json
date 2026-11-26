@@ -1,0 +1,17 @@
+{
+  "name": "clawback-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "smoke": "tsx smoke.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.32.1",
+    "@magicblock-labs/ephemeral-rollups-sdk": "0.18.0",
+    "@solana/web3.js": "^1.99.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}
