@@ -16,6 +16,8 @@ interface ChainCtx {
   setStatus: (s: string) => void;
   error: string;
   clearError: () => void;
+  /** Show an error from a chain call made outside `run`. */
+  fail: (e: unknown) => void;
   sheetOpen: boolean;
   openSheet: (open: boolean) => void;
 }
@@ -88,6 +90,10 @@ export function ChainProvider({ children }: { children: ReactNode }) {
   const value: ChainCtx = {
     mode, setMode, chain, snap, refresh, run, status, setStatus, error,
     clearError: () => setError(''), sheetOpen, openSheet,
+    fail: (e: unknown) => {
+      console.error(e);
+      setError(friendlyError(e));
+    },
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

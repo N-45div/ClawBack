@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { DemoBadge, Icon, IconButton, TIER_SPHERE, TopBar } from '../components/ui';
 import {
-  PLAY_SECONDS, aimScore, gripChance, layoutFromSeed, randomU32, resolveDrop, shortHex, slotUnder,
-  type DropResult,
+  PLAY_SECONDS, PRIZE_TYPES, STAGES, aimScore, gripChance, layoutFromSeed, randomU32, resolveDrop, shortHex, slotUnder,
+  type DropResult, type PrizeType,
 } from '../lib/game';
 import { pct } from '../lib/format';
 import { useNav, useStore } from '../state/store';
+import { useChain } from '../chain/ChainProvider';
 
-type Phase = 'idle' | 'aim' | 'auto' | 'missed';
+type Phase = 'idle' | 'loading' | 'aim' | 'auto' | 'missed';
+const MOVE_EVERY_MS = 120; // how often a steering update goes to the rollup
 
 const SPEED = 0.55; // pit widths per second
 const DROP_DEPTH = 148; // px the cable extends to reach the balls
@@ -46,9 +48,17 @@ export default function Claw() {
   const { state, dispatch } = useStore();
   const go = useNav();
 
+  const { mode, chain, openSheet, fail, refresh } = useChain();
+  const devnet = mode === 'devnet';
+
   const [seed, setSeed] = useState(() => randomU32());
-  const layout = useMemo(() => layoutFromSeed(seed), [seed]);
+  // Devnet: the layout comes from the VRF callback on the rollup.
+  const [chainLayout, setChainLayout] = useState<PrizeType[] | null>(null);
+  const layout = useMemo(() => chainLayout ?? layoutFromSeed(seed), [chainLayout, seed]);
   const [phase, setPhase] = useState<Phase>('idle');
+  const [loadingNote, setLoadingNote] = useState('');
+  const [moves, setMoves] = useState(0);
+  const lastSent = useRef(-1);
   const [clawX, setClawX] = useState(0.3);
   const [dir, setDir] = useState(0);
   const [timeLeft, setTimeLeft] = useState(PLAY_SECONDS);
@@ -89,21 +99,60 @@ export default function Claw() {
     return () => cancelAnimationFrame(raf);
   }, [phase, dir]);
 
+  // Devnet: stream the claw position to the rollup while steering (zero fee, no popups).
+  useEffect(() => {
+    if (phase !== 'aim' || !devnet || !chain) return;
+    const t = setInterval(() => {
+      const x = Math.round(xRef.current * 1000);
+      if (x === lastSent.current) return;
+      lastSent.current = x;
+      chain.moveClaw(x);
+      setMoves((m) => m + 1);
+    }, MOVE_EVERY_MS);
+    return () => clearInterval(t);
+  }, [phase, devnet, chain]);
+
   const drop = useCallback(async () => {
     if (phase !== 'aim') return;
     setDir(0);
     setPhase('auto');
     const x = xRef.current;
     const s = slotUnder(x);
-    const prize = layout[s];
-    // Demo: browser randomness. On-chain this roll comes from MagicBlock VRF.
-    const roll = randomU32() / 4294967296;
-    const r = resolveDrop(prize, aimScore(x), roll, seed);
-    setResult(r);
+    let r: DropResult;
 
-    setStageNote('GRAB');
     setDropY(DROP_DEPTH);
-    await sleep(850);
+    if (devnet && chain) {
+      // Final position + drop in one rollup tx; the VRF oracle answers with the roll.
+      setStageNote('VRF');
+      try {
+        const [d] = await Promise.all([chain.drop(x * 1000), sleep(850)]);
+        r = {
+          won: d.won,
+          passed: d.stagesPassed,
+          failedAt: d.won ? undefined : STAGES[d.stagesPassed],
+          roll: d.rollMilli / 1000,
+          grip: d.gripMilli / 1000,
+          aim: d.aimMilli / 1000,
+          prize: PRIZE_TYPES[d.prizeIdx],
+          seed,
+          sig: d.sig,
+          moves: moves + 1,
+        };
+      } catch (e) {
+        fail(e);
+        setDropY(0);
+        setPhase('idle');
+        void refresh();
+        return;
+      }
+    } else {
+      // Demo: browser randomness stands in for VRF.
+      const roll = randomU32() / 4294967296;
+      r = resolveDrop(layout[s], aimScore(x), roll, seed);
+      await sleep(850);
+    }
+    setResult(r);
+    setStageNote('GRAB');
     setClosed(true);
     await sleep(350);
     if (!alive.current) return;
@@ -148,8 +197,9 @@ export default function Claw() {
     await sleep(500);
     if (!alive.current) return;
     dispatch({ type: 'win', result: r });
+    if (devnet) void refresh();
     go('win');
-  }, [phase, layout, seed, dispatch, go]);
+  }, [phase, layout, seed, dispatch, go, devnet, chain, fail, refresh, moves]);
 
   // Countdown; the claw drops itself at zero
   useEffect(() => {
@@ -162,10 +212,34 @@ export default function Claw() {
     return () => clearTimeout(t);
   }, [phase, timeLeft, drop]);
 
-  const start = () => {
+  const start = async () => {
     if (state.plays <= 0) return;
-    dispatch({ type: 'startPlay' });
-    setSeed(randomU32()); // new fair layout every play (VRF on-chain)
+    if (devnet) {
+      if (!chain) {
+        openSheet(true);
+        return;
+      }
+      setPhase('loading');
+      try {
+        setLoadingNote('Opening your rollup session…');
+        await chain.ensureSession(); // one wallet approval, only when a session is not open yet
+        setLoadingNote('VRF is shuffling the prizes…');
+        const r = await chain.startPlay();
+        setChainLayout(r.layout.map((i) => PRIZE_TYPES[i]));
+        setSeed(Number(BigInt(r.seed) % 4294967296n));
+      } catch (e) {
+        fail(e);
+        setPhase('idle');
+        void refresh();
+        return;
+      }
+      dispatch({ type: 'startPlay' });
+    } else {
+      dispatch({ type: 'startPlay' });
+      setSeed(randomU32()); // demo: a new local layout every play
+    }
+    lastSent.current = -1;
+    setMoves(0);
     setResult(null);
     setHeld(null);
     setInChute(false);
@@ -187,7 +261,7 @@ export default function Claw() {
         if ((e.target as HTMLElement)?.tagName === 'BUTTON') return;
         e.preventDefault();
         if (phase === 'aim') void drop();
-        else if ((phase === 'idle' || phase === 'missed') && state.plays > 0) start();
+        else if ((phase === 'idle' || phase === 'missed') && state.plays > 0) void start();
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -213,10 +287,11 @@ export default function Claw() {
     disabled: !steering,
   });
 
-  const centreLabel = phase === 'aim' ? 'DROP' : phase === 'auto' ? '···' : 'START';
+  const busy = phase === 'auto' || phase === 'loading';
+  const centreLabel = phase === 'aim' ? 'DROP' : busy ? '···' : 'START';
   const onCentre = () => {
     if (phase === 'aim') void drop();
-    else if (phase !== 'auto') start();
+    else if (!busy) void start();
   };
 
   return (
@@ -295,8 +370,9 @@ export default function Claw() {
               {state.plays > 0 ? (
                 <>
                   <span className="display" style={{ fontSize: 22 }}>Ready when you are</span>
-                  <span className="muted" style={{ fontSize: 14, maxWidth: 240, lineHeight: 1.45 }}>
+                  <span className="muted" style={{ fontSize: 14, maxWidth: 250, lineHeight: 1.45 }}>
                     Press START to use 1 play. You get {PLAY_SECONDS} seconds to line up the claw, then DROP.
+                    {devnet && ' The first play opens a rollup session with one wallet approval.'}
                   </span>
                 </>
               ) : (
@@ -309,6 +385,14 @@ export default function Claw() {
             </div>
           )}
 
+          {phase === 'loading' && (
+            <div className="overlay" role="status">
+              <span className="spinner" aria-hidden="true" style={{ width: 28, height: 28, color: 'var(--accent)' }} />
+              <span className="display" style={{ fontSize: 18 }}>{loadingNote}</span>
+              <span className="mono muted" style={{ fontSize: 11, letterSpacing: 1 }}>MAGICBLOCK EPHEMERAL ROLLUP</span>
+            </div>
+          )}
+
           {phase === 'missed' && result && (
             <div className="overlay" role="status">
               <span className="label" style={{ color: 'var(--muted-2)' }}>Slipped at {result.failedAt}</span>
@@ -317,7 +401,7 @@ export default function Claw() {
                 GRIP {pct(result.grip)} · ROLL {result.roll.toFixed(2)}<br />AIM {result.aim.toFixed(2)} · LAYOUT {shortHex(result.seed)}
               </span>
               {state.plays > 0 ? (
-                <button className="btn light small" onClick={start}>Try again · {state.plays} left</button>
+                <button className="btn light small" onClick={() => void start()}>Try again · {state.plays} left</button>
               ) : (
                 <button className="btn light small" onClick={() => go('pay')}>Earn more plays</button>
               )}
@@ -338,7 +422,7 @@ export default function Claw() {
           className="arcade"
           aria-label={phase === 'aim' ? 'Drop the claw' : 'Start a play'}
           onClick={onCentre}
-          disabled={phase === 'auto' || (phase !== 'aim' && state.plays <= 0)}
+          disabled={busy || (phase !== 'aim' && state.plays <= 0)}
         >
           <span>{centreLabel}</span>
         </button>
@@ -349,8 +433,16 @@ export default function Claw() {
         HOLD ◀ ▶ TO STEER · CENTRE IT FOR A STRONGER GRIP
         <br />
         LAYOUT {shortHex(seed)} · ODDS PUBLIC
+        {devnet && (
+          <>
+            <br />
+            <span className="accent">{moves} ZERO-FEE ROLLUP TXS THIS PLAY</span>
+          </>
+        )}
       </p>
-      <div style={{ marginTop: 10 }}><DemoBadge /></div>
+      <div style={{ marginTop: 10 }}>
+        {devnet ? <span className="demo-badge" style={{ color: 'var(--accent)', borderColor: 'rgba(212,255,58,0.4)' }}>DEVNET · MAGICBLOCK ER + VRF</span> : <DemoBadge />}
+      </div>
     </div>
   );
 }

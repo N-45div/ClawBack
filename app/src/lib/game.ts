@@ -88,6 +88,10 @@ export interface DropResult {
   aim: number;
   prize: PrizeType;
   seed: number;
+  /** Devnet: the rollup transaction that dropped the claw. */
+  sig?: string;
+  /** Devnet: rollup transactions sent while steering this play. */
+  moves?: number;
 }
 
 /**

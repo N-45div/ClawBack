@@ -165,8 +165,11 @@ export class ClawChain {
   async ensureSession(): Promise<void> {
     if (await this.isDelegated()) {
       const g = await this.readGame('er');
-      if (g && g.sessionKey.equals(this.session.publicKey)) return;
-      // Delegated under a session key this browser no longer has: bring it home first.
+      const pInfo = await this.base.getAccountInfo(this.playerPda);
+      const p: Player = pInfo ? this.program.coder.accounts.decode('player', pInfo.data) : { plays: 0 };
+      // Reuse the open session unless its plays ran out while new ones were earned on Solana.
+      if (g && g.sessionKey.equals(this.session.publicKey) && (g.plays > 0 || p.plays === 0)) return;
+      // Otherwise (or if this browser lost the session key) bring the game home and reopen.
       await this.bringHome();
     }
     const tx = new Transaction().add(
