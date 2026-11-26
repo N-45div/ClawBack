@@ -5,3 +5,6 @@ target
 .keys
 *.local
 test-ledger
+
+# internal: demo film project (HyperFrames), recordings and renders
+video/
