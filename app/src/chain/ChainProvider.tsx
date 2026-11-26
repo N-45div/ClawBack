@@ -11,7 +11,8 @@ interface ChainCtx {
   chain: ClawChain | null;
   snap: ChainSnapshot | null;
   refresh: () => Promise<ChainSnapshot | null>;
-  /** Run a chain action with a status line; returns undefined if it failed (error is shown). */
+  /** Run a chain action with a status line; returns undefined if it failed (error is shown),
+   *  so `fn` should return a value (not void) when success matters to the caller. */
   run: <T>(status: string, fn: (c: ClawChain) => Promise<T>) => Promise<T | undefined>;
   status: string;
   setStatus: (s: string) => void;

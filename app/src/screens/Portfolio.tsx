@@ -116,7 +116,12 @@ export default function Portfolio() {
             className="btn light"
             style={{ marginTop: 16, width: '100%' }}
             disabled={!!status}
-            onClick={() => void run('Bringing winnings home…', (c) => c.bringHome(setStatus)).then((r) => r !== undefined && flash('Winnings settled on Solana.'))}
+            onClick={() =>
+              void run('Bringing winnings home…', async (c) => {
+                await c.bringHome(setStatus);
+                return true;
+              }).then((ok) => ok && flash('Winnings settled on Solana.'))
+            }
           >
             Bring winnings home to Solana
           </button>

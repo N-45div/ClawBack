@@ -108,7 +108,12 @@ export default function Win() {
             <button
               className="btn"
               disabled={!!status}
-              onClick={() => void run('Bringing winnings home…', (c) => c.bringHome(setStatus)).then((r) => r !== undefined && go('portfolio'))}
+              onClick={() =>
+                void run('Bringing winnings home…', async (c) => {
+                  await c.bringHome(setStatus);
+                  return true;
+                }).then((ok) => ok && go('portfolio'))
+              }
             >
               Settle to Solana
             </button>
