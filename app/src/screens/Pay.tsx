@@ -3,6 +3,8 @@ import { BigMoney, Icon, IconButton, TopBar } from '../components/ui';
 import { CENTS_PER_PLAY, roundUpCents } from '../lib/game';
 import { money, moneyParts } from '../lib/format';
 import { useNav, useStore } from '../state/store';
+import { useChain } from '../chain/ChainProvider';
+import { explorerTx } from '../chain/config';
 
 // Demo merchants. Day 3 swaps this for a real Solana Pay request.
 const MERCHANTS = [
@@ -17,14 +19,23 @@ export default function Pay() {
   const [mIdx, setMIdx] = useState(0);
   const [on, setOn] = useState(true);
   const [boost, setBoost] = useState(1);
-  const [paid, setPaid] = useState<null | { save: number; plays: number; total: number; merchant: string }>(null);
+  const [paid, setPaid] = useState<null | { save: number; plays: number; total: number; merchant: string; sig?: string }>(null);
+  const { mode, run, status } = useChain();
 
   const m = MERCHANTS[mIdx];
   const save = on ? roundUpCents(m.cents) * boost : 0;
   const plays = Math.floor((state.progressCents + save) / CENTS_PER_PLAY);
   const total = m.cents + save;
 
-  const pay = () => {
+  const pay = async () => {
+    if (mode === 'devnet') {
+      // The program sends the purchase to the merchant and the round-up to the savings vault.
+      const sig = await run('Approve the payment in your wallet…', (c) => c.pay(m.cents, on ? boost : 0));
+      if (!sig) return;
+      dispatch({ type: 'roundupStats', saveCents: save });
+      setPaid({ save, plays, total, merchant: m.name, sig });
+      return;
+    }
     dispatch({ type: 'pay', saveCents: save, merchant: m.name });
     setPaid({ save, plays, total, merchant: m.name });
   };
@@ -44,6 +55,12 @@ export default function Pay() {
           <div><span className="muted">SAVED</span><span className="accent">+{money(paid.save)}</span></div>
           <div><span className="muted">CLAW PLAYS</span><span>+{paid.plays}</span></div>
           <div><span className="muted">SAVINGS NOW</span><span>{money(state.savingsCents)}</span></div>
+          {paid.sig && (
+            <div>
+              <span className="muted">SOLANA TX</span>
+              <a href={explorerTx(paid.sig)} target="_blank" rel="noreferrer">{paid.sig.slice(0, 8)}… ↗</a>
+            </div>
+          )}
         </section>
         <div className="spacer" style={{ minHeight: 24 }} />
         <div className="stack">
@@ -120,7 +137,7 @@ export default function Pay() {
         <span className="muted" style={{ fontSize: 14 }}>+{plays} claw {plays === 1 ? 'play' : 'plays'} with this payment</span>
         <span className="mono" style={{ fontSize: 14 }}>{money(total)}</span>
       </div>
-      <button className="btn primary" onClick={pay}>Pay {money(total)}</button>
+      <button className="btn primary" onClick={() => void pay()} disabled={!!status}>Pay {money(total)}</button>
     </div>
   );
 }
