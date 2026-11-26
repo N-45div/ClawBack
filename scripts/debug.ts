@@ -11,7 +11,9 @@ const idl = JSON.parse(readFileSync(resolve(ROOT, 'target/idl/clawback.json'), '
 const base = new Connection('https://api.devnet.solana.com', 'confirmed');
 const er = new Connection(ER_RPC, 'confirmed');
 const program = new anchor.Program(idl, new anchor.AnchorProvider(base, new anchor.Wallet(wallet), {}));
-const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from('game'), wallet.publicKey.toBuffer()], program.programId);
+// OWNER=<pubkey> inspects another player's game (e.g. a browser burner wallet).
+const owner = process.env.OWNER ? new PublicKey(process.env.OWNER) : wallet.publicKey;
+const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from('game'), owner.toBuffer()], program.programId);
 
 for (const [name, conn] of [['base', base], ['er', er]] as const) {
   const info = await conn.getAccountInfo(gamePda);
