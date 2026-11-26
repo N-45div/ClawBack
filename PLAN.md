@@ -38,8 +38,11 @@ Build (in WSL): `bash scripts/build.sh` · errors only: `bash scripts/build.sh e
 Program id: `Gw5XQLpiwYnNGaxmxXmAisozGN4R4WA7YTKbAXAaTeeE`
 
 ## Day 3: Thu Nov 26 to Fri Nov 27, connect and ship
-- [ ] Wallet adapter and session keys (no popups while steering)
-- [ ] Swap demo calls for program calls, keeping demo mode as a fallback
-- [ ] Deploy the frontend (Vercel)
-- [ ] 2-minute demo video and README
+- [x] Wallet adapter (Wallet Standard) + devnet burner wallet; session key signs rollup moves (no popups while steering)
+- [x] Demo/devnet switch: pay, withdraw, sell, settle, START/steer/DROP all on-chain in devnet, with demo kept as a fallback
+- [x] Tested in the app on devnet: create account → pay 3× (+$2.10, +4 plays) → session + VRF layout (2.8 s) →
+      drop (VRF, 3.6 s) → won $1 BTC → settle → sell-back (+$0.95) → withdraw
+- [x] README
+- [x] Frontend on Vercel: https://clawback-n45divs-projects.vercel.app
+- [ ] 2-minute demo video (script in DEMO.md)
 - [ ] Submit before Fri 7:30 PM IST
