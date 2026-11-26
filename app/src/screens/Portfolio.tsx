@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ASSET_SPHERE, BigMoney, Dock, Icon, Sheet, TopBar } from '../components/ui';
 import { money, moneyParts } from '../lib/format';
 import { initialState, useStore, type Holding } from '../state/store';
+import { useChain } from '../chain/ChainProvider';
 
 // Illustrative 7-day shape per asset. Day 3 replaces these with live prices.
 const SPARK: Record<string, string> = {
@@ -16,6 +17,29 @@ export default function Portfolio() {
   const [selling, setSelling] = useState<Holding | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
   const [toast, setToast] = useState('');
+  const { mode, run, setStatus, status } = useChain();
+  const devnet = mode === 'devnet';
+  const hasPending = state.holdings.some((h) => h.pending);
+
+  const doSell = async (h: Holding) => {
+    if (devnet) {
+      const ok = await run('Settling and selling on Solana…', (c) => c.sell(h.assetIdx ?? 0));
+      if (ok === undefined) return;
+    } else {
+      dispatch({ type: 'sell', holdingId: h.id });
+    }
+    flash(`Sold. ${money(h.sellBackCents)} added to savings.`);
+  };
+
+  const doWithdraw = async (cents: number) => {
+    if (devnet) {
+      const ok = await run('Approve the withdrawal in your wallet…', (c) => c.withdraw(cents));
+      if (ok === undefined) return;
+    } else {
+      dispatch({ type: 'withdraw', cents });
+    }
+    flash(`${money(cents)} sent to your wallet.`);
+  };
 
   const wonCents = state.holdings.reduce((a, h) => a + h.valueCents, 0);
   const total = state.savingsCents + wonCents;
@@ -75,7 +99,7 @@ export default function Portfolio() {
                   <span className="ball" aria-hidden="true" style={{ width: 34, height: 34, background: ASSET_SPHERE[h.asset] }} />
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
                     <span style={{ fontSize: 15, fontWeight: 500 }}>{h.name}</span>
-                    <span className="mono muted" style={{ fontSize: 11 }}>{h.asset === 'NFT' ? 'NFT · COLLECTIBLE' : h.asset}</span>
+                    <span className="mono muted" style={{ fontSize: 11 }}>{h.pending ? `${h.asset} · ON ROLLUP` : h.asset === 'NFT' ? 'NFT · COLLECTIBLE' : h.asset}</span>
                   </span>
                   <svg width="56" height="22" viewBox="0 0 56 22" fill="none" aria-hidden="true">
                     <path d={SPARK[h.asset]} stroke={h.asset === 'SOL' || h.asset === 'BTC' ? 'var(--accent)' : '#4A4A55'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -87,15 +111,27 @@ export default function Portfolio() {
             ))}
           </ul>
         )}
-        <button
-          className="btn ghost"
-          style={{ marginTop: 12, width: '100%' }}
-          onClick={() => {
-            if (confirm('Reset the demo balances?')) dispatch({ type: 'reset' });
-          }}
-        >
-          RESET DEMO ({money(initialState.savingsCents)})
-        </button>
+        {devnet && hasPending && (
+          <button
+            className="btn light"
+            style={{ marginTop: 16, width: '100%' }}
+            disabled={!!status}
+            onClick={() => void run('Bringing winnings home…', (c) => c.bringHome(setStatus)).then((r) => r !== undefined && flash('Winnings settled on Solana.'))}
+          >
+            Bring winnings home to Solana
+          </button>
+        )}
+        {!devnet && (
+          <button
+            className="btn ghost"
+            style={{ marginTop: 12, width: '100%' }}
+            onClick={() => {
+              if (confirm('Reset the demo balances?')) dispatch({ type: 'reset' });
+            }}
+          >
+            RESET DEMO ({money(initialState.savingsCents)})
+          </button>
+        )}
       </section>
 
       <Sheet open={!!selling} onClose={() => setSelling(null)} title={selling?.name ?? ''}>
@@ -108,12 +144,18 @@ export default function Portfolio() {
               <div><span className="muted">WORTH</span><span>{money(selling.valueCents)}</span></div>
               <div><span className="muted">SELL-BACK</span><span className="accent">{money(selling.sellBackCents)}</span></div>
             </div>
+            {devnet && (
+              <p className="mono muted" style={{ margin: 0, fontSize: 11, letterSpacing: 0.5, lineHeight: 1.6 }}>
+                ON DEVNET THIS SELLS ALL YOUR {selling.asset}{selling.pending ? ', AFTER SETTLING IT FROM THE ROLLUP' : ''}.
+              </p>
+            )}
             <button
               className="btn primary"
+              disabled={!!status}
               onClick={() => {
-                dispatch({ type: 'sell', holdingId: selling.id });
-                flash(`Sold. ${money(selling.sellBackCents)} added to savings.`);
+                const h = selling;
                 setSelling(null);
+                void doSell(h);
               }}
             >
               Sell for {money(selling.sellBackCents)}
@@ -132,11 +174,10 @@ export default function Portfolio() {
         </div>
         <button
           className="btn primary"
+          disabled={!!status}
           onClick={() => {
-            const amt = state.savingsCents;
-            dispatch({ type: 'withdraw', cents: amt });
-            flash(`${money(amt)} sent to your wallet.`);
             setWithdrawing(false);
+            void doWithdraw(state.savingsCents);
           }}
         >
           Withdraw {money(state.savingsCents)}
