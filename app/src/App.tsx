@@ -6,6 +6,7 @@ import Claw from './screens/Claw';
 import Win from './screens/Win';
 import Portfolio from './screens/Portfolio';
 import Squad from './screens/Squad';
+import { ChainToast, WalletSheet } from './components/WalletSheet';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => {
@@ -28,6 +29,8 @@ export default function App() {
         {screen === 'win' && <Win />}
         {screen === 'portfolio' && <Portfolio />}
         {screen === 'squad' && <Squad />}
+        <ChainToast />
+        <WalletSheet />
       </div>
     </NavProvider>
   );

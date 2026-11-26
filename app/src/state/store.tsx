@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
 import { CENTS_PER_PLAY, type Asset, type DropResult } from '../lib/game';
+import { ASSETS, type ChainSnapshot } from '../chain/client';
 
 export interface Holding {
   id: string;
@@ -8,6 +9,10 @@ export interface Holding {
   valueCents: number;
   sellBackCents: number;
   wonAt: number;
+  /** Devnet: still inside the rollup Game, settles on sell or "bring home". */
+  pending?: boolean;
+  /** Devnet: index into the program's asset array. */
+  assetIdx?: number;
 }
 
 export interface FeedItem {
@@ -44,6 +49,8 @@ type Action =
   | { type: 'withdraw'; cents: number }
   | { type: 'share' }
   | { type: 'cheer'; id: string }
+  | { type: 'sync'; snap: ChainSnapshot }
+  | { type: 'roundupStats'; saveCents: number }
   | { type: 'reset' };
 
 const now = Date.now();
@@ -151,30 +158,66 @@ function reducer(s: State, a: Action): State {
           f.id === a.id ? { ...f, cheered: !f.cheered, cheers: f.cheers + (f.cheered ? -1 : 1) } : f,
         ),
       };
+    case 'roundupStats':
+      // Devnet: balances come from the chain; only the local social/weekly counters move here.
+      return { ...s, weekRoundupsCents: s.weekRoundupsCents + a.saveCents, squadSavedCents: s.squadSavedCents + a.saveCents };
+    case 'sync': {
+      // Devnet: balances, plays and holdings come from the program; social stays local.
+      const n = a.snap;
+      const holdings: Holding[] = n.holdings.map((h) => ({
+        id: `chain-${h.assetIdx}-${h.pending ? 'p' : 's'}`,
+        asset: ASSETS[h.assetIdx] as Asset,
+        name: ASSET_NAMES[ASSETS[h.assetIdx] as Asset],
+        valueCents: h.valueCents,
+        sellBackCents: h.sellBackCents,
+        wonAt: Date.now(),
+        pending: h.pending,
+        assetIdx: h.assetIdx,
+      }));
+      return {
+        ...s,
+        savingsCents: n.savingsCents,
+        plays: n.plays,
+        progressCents: n.progressCents,
+        playsUsed: n.playsUsed,
+        holdings,
+        week: [...s.week.slice(0, -1), n.savingsCents],
+      };
+    }
     case 'reset':
       return initialState;
   }
 }
 
-const KEY = 'clawback-demo-v1';
+/** Devnet starts from zero; balances arrive from the chain. */
+export const devnetInitialState: State = {
+  ...initialState,
+  savingsCents: 0,
+  plays: 0,
+  progressCents: 0,
+  weekRoundupsCents: 0,
+  week: [0, 0, 0, 0, 0, 0, 0],
+  holdings: [],
+  playsUsed: 0,
+};
 
-function load(): State {
+function load(key: string, seed: State): State {
   try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) return { ...initialState, ...(JSON.parse(raw) as State) };
+    const raw = localStorage.getItem(key);
+    if (raw) return { ...seed, ...(JSON.parse(raw) as State), lastWin: undefined };
   } catch {
     /* fall back to the seed state */
   }
-  return initialState;
+  return seed;
 }
 
 const Ctx = createContext<{ state: State; dispatch: (a: Action) => void } | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, load);
+export function StoreProvider({ children, storageKey, seed }: { children: ReactNode; storageKey: string; seed: State }) {
+  const [state, dispatch] = useReducer(reducer, undefined, () => load(storageKey, seed));
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  }, [state]);
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  }, [state, storageKey]);
   return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>;
 }
 
