@@ -2,6 +2,33 @@ import { BigMoney, Dock, Icon, TopBar } from '../components/ui';
 import { CENTS_PER_PLAY } from '../lib/game';
 import { money, moneyParts } from '../lib/format';
 import { useNav, useStore } from '../state/store';
+import { useChain } from '../chain/ChainProvider';
+import { ModeBadge } from '../components/WalletSheet';
+
+/** Devnet onboarding: connect a wallet, then create the on-chain Player. */
+function DevnetSetup() {
+  const { chain, snap, run, openSheet } = useChain();
+  const needsWallet = !chain;
+  const needsAccount = !!chain && !!snap && !snap.hasPlayer;
+  if (!needsWallet && !needsAccount) return null;
+  return (
+    <section className="card" style={{ marginTop: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <span className="label">Solana devnet</span>
+      <span className="display" style={{ fontSize: 22 }}>{needsWallet ? 'Connect a wallet' : 'Open your savings account'}</span>
+      <span className="muted" style={{ fontSize: 14, lineHeight: 1.5 }}>
+        {needsWallet
+          ? 'Use any Solana wallet on devnet. Your savings live in an on-chain vault you can withdraw from any time.'
+          : 'One approval creates your on-chain savings account and claw machine.'}
+      </span>
+      <button
+        className="btn primary"
+        onClick={() => (needsWallet ? openSheet(true) : void run('Creating your account…', (c) => c.initPlayer()))}
+      >
+        {needsWallet ? 'Connect wallet' : 'Create account'}
+      </button>
+    </section>
+  );
+}
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -57,13 +84,15 @@ function MiniCabinet() {
 export default function Home() {
   const { state } = useStore();
   const go = useNav();
+  const { mode, chain, snap } = useChain();
   const toNext = CENTS_PER_PLAY - state.progressCents;
+  const devnetReady = mode === 'demo' || (!!chain && !!snap?.hasPlayer);
 
   return (
     <div className="screen with-dock">
       <TopBar
         left={<span className="wordmark">clawback</span>}
-        right={<button className="avatar-btn" aria-label="Profile">AK</button>}
+        right={<ModeBadge />}
       />
 
       <section aria-label="Savings" className="stack" style={{ paddingTop: 8 }}>
@@ -82,7 +111,9 @@ export default function Home() {
         <button className="btn light" onClick={() => go('pay')}>Pay &amp; save</button>
       </div>
 
-      <button
+      {!devnetReady && <DevnetSetup />}
+
+      {devnetReady && <button
         className="dots"
         onClick={() => go('claw')}
         style={{
@@ -111,7 +142,7 @@ export default function Home() {
           </span>
         </div>
         <MiniCabinet />
-      </button>
+      </button>}
 
       <section aria-label="Squad activity" style={{ marginTop: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 36 }}>
