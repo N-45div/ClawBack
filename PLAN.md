@@ -43,6 +43,6 @@ Program id: `Gw5XQLpiwYnNGaxmxXmAisozGN4R4WA7YTKbAXAaTeeE`
 - [x] Tested in the app on devnet: create account → pay 3× (+$2.10, +4 plays) → session + VRF layout (2.8 s) →
       drop (VRF, 3.6 s) → won $1 BTC → settle → sell-back (+$0.95) → withdraw
 - [x] README
-- [x] Frontend on Vercel: https://clawback-n45divs-projects.vercel.app
+- [x] Frontend on Vercel: https://clawback-six.vercel.app
 - [ ] 2-minute demo video (script in DEMO.md)
 - [ ] Submit before Fri 7:30 PM IST

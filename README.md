@@ -7,7 +7,7 @@ ClawBack rounds up everyday payments into savings you can always withdraw. Every
 Built for **Solana Blitz v10** by MagicBlock, track *Entertainment Finance for Everyone*:
 > apps that connect everyday spending to investing, as easy as a savings app and as fun as social trading.
 
-- **Live app:** https://clawback-n45divs-projects.vercel.app. Starts in demo mode; tap the badge at the top right to switch to **Solana devnet**.
+- **Live app:** https://clawback-six.vercel.app. Starts in demo mode; tap the badge at the top right to switch to **Solana devnet**.
 - **Program (devnet):** [`Gw5XQLpiwYnNGaxmxXmAisozGN4R4WA7YTKbAXAaTeeE`](https://explorer.solana.com/address/Gw5XQLpiwYnNGaxmxXmAisozGN4R4WA7YTKbAXAaTeeE?cluster=devnet)
 
 ## How it works
