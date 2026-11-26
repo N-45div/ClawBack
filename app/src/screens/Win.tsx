@@ -3,6 +3,8 @@ import { DemoBadge, Icon, IconButton, TIER_SPHERE, TopBar } from '../components/
 import { shortHex } from '../lib/game';
 import { money, pct } from '../lib/format';
 import { useNav, useStore } from '../state/store';
+import { useChain } from '../chain/ChainProvider';
+import { explorerTx } from '../chain/config';
 
 const GLOW: Record<string, string> = {
   common: 'rgba(210,212,222,0.22)',
@@ -14,6 +16,8 @@ export default function Win() {
   const { state, dispatch } = useStore();
   const go = useNav();
   const w = state.lastWin;
+  const { mode, run, setStatus, status } = useChain();
+  const devnet = mode === 'devnet';
 
   useEffect(() => {
     if (!w) go('claw');
@@ -74,7 +78,22 @@ export default function Win() {
         </div>
       </section>
 
-      <div style={{ marginTop: 10 }}><DemoBadge /></div>
+      <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+        {devnet ? (
+          <>
+            <span className="demo-badge" style={{ color: 'var(--accent)', borderColor: 'rgba(212,255,58,0.4)' }}>
+              VRF ON MAGICBLOCK ER{result.moves ? ` · ${result.moves} TXS` : ''}
+            </span>
+            {result.sig && (
+              <a className="mono" href={explorerTx(result.sig, 'er')} target="_blank" rel="noreferrer" style={{ fontSize: 11 }}>
+                DROP TX ↗
+              </a>
+            )}
+          </>
+        ) : (
+          <DemoBadge />
+        )}
+      </div>
       <div className="spacer" style={{ minHeight: 20 }} />
 
       <div className="stack" style={{ width: '100%', position: 'relative' }}>
@@ -84,9 +103,20 @@ export default function Win() {
           <button className="btn primary" onClick={() => go('portfolio')}>Keep it invested</button>
         )}
         <div className="row2">
-          <button className="btn" disabled={sold} onClick={() => dispatch({ type: 'sell', holdingId: w.holdingId })}>
-            {sold ? 'Sold' : `Sell for ${money(p.sellBackCents)}`}
-          </button>
+          {devnet ? (
+            // On-chain, winnings sit in the rollup Game until settled; selling happens from the portfolio.
+            <button
+              className="btn"
+              disabled={!!status}
+              onClick={() => void run('Bringing winnings home…', (c) => c.bringHome(setStatus)).then((r) => r !== undefined && go('portfolio'))}
+            >
+              Settle to Solana
+            </button>
+          ) : (
+            <button className="btn" disabled={sold} onClick={() => dispatch({ type: 'sell', holdingId: w.holdingId })}>
+              {sold ? 'Sold' : `Sell for ${money(p.sellBackCents)}`}
+            </button>
+          )}
           <button
             className="btn"
             disabled={shared}
