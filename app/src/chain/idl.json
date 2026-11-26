@@ -1,0 +1,1612 @@
+{
+  "address": "Gw5XQLpiwYnNGaxmxXmAisozGN4R4WA7YTKbAXAaTeeE",
+  "metadata": {
+    "name": "clawback",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Clawback: round-up savings + a fair claw game on MagicBlock Ephemeral Rollups"
+  },
+  "instructions": [
+    {
+      "name": "callback_drop",
+      "discriminator": [
+        221,
+        65,
+        110,
+        83,
+        221,
+        254,
+        207,
+        198
+      ],
+      "accounts": [
+        {
+          "name": "vrf_program_identity",
+          "docs": [
+            "Declared here (so the macro skips its runtime-derived version) with a compile-time address."
+          ],
+          "signer": true,
+          "address": "2xMsdUY6cwHcMosa1FFRy7V5T6GUesLCGhLST1fxdiif"
+        },
+        {
+          "name": "game",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "randomness",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "callback_layout",
+      "discriminator": [
+        225,
+        10,
+        167,
+        231,
+        53,
+        161,
+        15,
+        233
+      ],
+      "accounts": [
+        {
+          "name": "vrf_program_identity",
+          "docs": [
+            "Declared here (so the macro skips its runtime-derived version) with a compile-time address."
+          ],
+          "signer": true,
+          "address": "2xMsdUY6cwHcMosa1FFRy7V5T6GUesLCGhLST1fxdiif"
+        },
+        {
+          "name": "game",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "randomness",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "delegate_game",
+      "discriminator": [
+        116,
+        183,
+        70,
+        107,
+        112,
+        223,
+        122,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "buffer_game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                236,
+                185,
+                200,
+                120,
+                184,
+                151,
+                182,
+                60,
+                11,
+                253,
+                183,
+                25,
+                56,
+                27,
+                205,
+                151,
+                57,
+                61,
+                11,
+                109,
+                24,
+                118,
+                114,
+                107,
+                125,
+                37,
+                118,
+                21,
+                236,
+                55,
+                56,
+                99
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_program",
+          "address": "Gw5XQLpiwYnNGaxmxXmAisozGN4R4WA7YTKbAXAaTeeE"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "drop_claw",
+      "docs": [
+        "Drop the claw and ask VRF for the roll. After the timer anyone may force it."
+      ],
+      "discriminator": [
+        176,
+        101,
+        112,
+        189,
+        15,
+        40,
+        96,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "Owner or registered session key; pays the (fee-exempt on ER) VRF request."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.owner",
+                "account": "Game"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_queue",
+          "writable": true
+        },
+        {
+          "name": "program_identity",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vrf_program",
+          "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
+        },
+        {
+          "name": "slot_hashes",
+          "address": "SysvarS1otHashes111111111111111111111111111"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "client_seed",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "end_session",
+      "docs": [
+        "Commit the Game to the base layer and hand it back (then call settle there)."
+      ],
+      "discriminator": [
+        11,
+        244,
+        61,
+        154,
+        212,
+        249,
+        15,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.owner",
+                "account": "Game"
+              }
+            ]
+          }
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "fund_pool",
+      "docs": [
+        "Anyone (a sponsor, the treasury) can top up the prize pool."
+      ],
+      "discriminator": [
+        36,
+        57,
+        233,
+        176,
+        181,
+        20,
+        87,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "funder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_cents",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "init_player",
+      "discriminator": [
+        114,
+        27,
+        219,
+        144,
+        50,
+        15,
+        228,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_vault",
+      "discriminator": [
+        77,
+        79,
+        85,
+        150,
+        33,
+        217,
+        52,
+        106
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "load_session",
+      "docs": [
+        "Move earned plays into the Game and register a browser session key that may",
+        "sign rollup moves (no wallet popup per move). Follow with delegate_game in the same tx."
+      ],
+      "discriminator": [
+        22,
+        37,
+        140,
+        12,
+        69,
+        94,
+        222,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "session",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "player",
+            "game"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "session_key",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "move_claw",
+      "docs": [
+        "Steer. Called many times a second on the rollup, at zero fee."
+      ],
+      "discriminator": [
+        203,
+        22,
+        32,
+        45,
+        79,
+        124,
+        91,
+        113
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.owner",
+                "account": "Game"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "x",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "pay",
+      "docs": [
+        "Pay a merchant. The round-up (x boost) goes to the savings vault and earns plays."
+      ],
+      "discriminator": [
+        119,
+        18,
+        216,
+        65,
+        192,
+        117,
+        122,
+        220
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "merchant",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "player"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_cents",
+          "type": "u64"
+        },
+        {
+          "name": "boost",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "process_undelegation",
+      "discriminator": [
+        196,
+        28,
+        41,
+        206,
+        48,
+        37,
+        51,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "base_account",
+          "writable": true
+        },
+        {
+          "name": "buffer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  110,
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101,
+                  45,
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_account"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                181,
+                183,
+                0,
+                225,
+                242,
+                87,
+                58,
+                192,
+                204,
+                6,
+                34,
+                1,
+                52,
+                74,
+                207,
+                151,
+                184,
+                53,
+                6,
+                235,
+                140,
+                229,
+                25,
+                152,
+                204,
+                98,
+                126,
+                24,
+                147,
+                128,
+                167,
+                62
+              ]
+            }
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "account_seeds",
+          "type": {
+            "vec": "bytes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "sell",
+      "docs": [
+        "Sell a won asset back to the machine at its fixed sell-back price; proceeds go to savings."
+      ],
+      "discriminator": [
+        51,
+        230,
+        133,
+        164,
+        1,
+        127,
+        131,
+        173
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "player"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "asset",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "settle",
+      "docs": [
+        "After the Game is undelegated: winnings become holdings, unused plays go back."
+      ],
+      "discriminator": [
+        175,
+        42,
+        185,
+        87,
+        144,
+        131,
+        102,
+        212
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "player",
+            "game"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "start_play",
+      "docs": [
+        "Use one play and ask VRF for a fresh, fair prize layout."
+      ],
+      "discriminator": [
+        14,
+        135,
+        114,
+        204,
+        136,
+        215,
+        67,
+        129
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "Owner or registered session key; pays the (fee-exempt on ER) VRF request."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.owner",
+                "account": "Game"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_queue",
+          "writable": true
+        },
+        {
+          "name": "program_identity",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vrf_program",
+          "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
+        },
+        {
+          "name": "slot_hashes",
+          "address": "SysvarS1otHashes111111111111111111111111111"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "client_seed",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "Savings are never at risk: withdraw any amount, any time."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "player"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_cents",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Game",
+      "discriminator": [
+        27,
+        90,
+        166,
+        125,
+        74,
+        100,
+        121,
+        18
+      ]
+    },
+    {
+      "name": "Player",
+      "discriminator": [
+        205,
+        222,
+        112,
+        7,
+        165,
+        155,
+        206,
+        218
+      ]
+    },
+    {
+      "name": "Vault",
+      "discriminator": [
+        211,
+        8,
+        232,
+        43,
+        2,
+        152,
+        117,
+        119
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "DropResolved",
+      "discriminator": [
+        53,
+        76,
+        200,
+        54,
+        142,
+        115,
+        19,
+        149
+      ]
+    },
+    {
+      "name": "RoundUp",
+      "discriminator": [
+        26,
+        77,
+        221,
+        7,
+        118,
+        195,
+        38,
+        185
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "BadAmount",
+      "msg": "Amount must be positive and within your balance"
+    },
+    {
+      "code": 6001,
+      "name": "BadBoost",
+      "msg": "Boost must be 0 to 3"
+    },
+    {
+      "code": 6002,
+      "name": "BadAsset",
+      "msg": "Unknown asset"
+    },
+    {
+      "code": 6003,
+      "name": "NothingToSell",
+      "msg": "Nothing to sell"
+    },
+    {
+      "code": 6004,
+      "name": "PoolEmpty",
+      "msg": "Prize pool cannot cover this right now"
+    },
+    {
+      "code": 6005,
+      "name": "NotYourGame",
+      "msg": "Not your game"
+    },
+    {
+      "code": 6006,
+      "name": "WrongPhase",
+      "msg": "Wrong game phase for this action"
+    },
+    {
+      "code": 6007,
+      "name": "NoPlays",
+      "msg": "No plays left"
+    },
+    {
+      "code": 6008,
+      "name": "TimeUp",
+      "msg": "Time is up, drop the claw"
+    },
+    {
+      "code": 6009,
+      "name": "BadQueue",
+      "msg": "Unsupported oracle queue"
+    },
+    {
+      "code": 6010,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    }
+  ],
+  "types": [
+    {
+      "name": "DropResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "won",
+            "type": "bool"
+          },
+          {
+            "name": "prize_idx",
+            "type": "u8"
+          },
+          {
+            "name": "grip_milli",
+            "type": "u16"
+          },
+          {
+            "name": "roll_milli",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Game",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "session_key",
+            "type": "pubkey"
+          },
+          {
+            "name": "plays",
+            "type": "u32"
+          },
+          {
+            "name": "played",
+            "type": "u32"
+          },
+          {
+            "name": "wins",
+            "type": "u32"
+          },
+          {
+            "name": "phase",
+            "type": "u8"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "layout",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "layout_seed",
+            "type": "u64"
+          },
+          {
+            "name": "claw_x",
+            "type": "u16"
+          },
+          {
+            "name": "started_at",
+            "type": "i64"
+          },
+          {
+            "name": "won_value_cents",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "won_sell_back_cents",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "last",
+            "type": {
+              "defined": {
+                "name": "LastDrop"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LastDrop",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "won",
+            "type": "bool"
+          },
+          {
+            "name": "stages_passed",
+            "type": "u8"
+          },
+          {
+            "name": "prize_idx",
+            "type": "u8"
+          },
+          {
+            "name": "claw_x",
+            "type": "u16"
+          },
+          {
+            "name": "aim_milli",
+            "type": "u16"
+          },
+          {
+            "name": "grip_milli",
+            "type": "u16"
+          },
+          {
+            "name": "roll_milli",
+            "type": "u16"
+          },
+          {
+            "name": "layout_seed",
+            "type": "u64"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Player",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "savings_cents",
+            "type": "u64"
+          },
+          {
+            "name": "plays",
+            "type": "u32"
+          },
+          {
+            "name": "progress_cents",
+            "type": "u64"
+          },
+          {
+            "name": "plays_used",
+            "type": "u32"
+          },
+          {
+            "name": "wins",
+            "type": "u32"
+          },
+          {
+            "name": "holdings_cents",
+            "docs": [
+              "Indexed by game::Asset: SOL, BTC, USDC, NFT."
+            ],
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "sell_back_cents",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoundUp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_cents",
+            "type": "u64"
+          },
+          {
+            "name": "saved_cents",
+            "type": "u64"
+          },
+          {
+            "name": "plays",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Vault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "pool_cents",
+            "type": "u64"
+          },
+          {
+            "name": "total_savings_cents",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
